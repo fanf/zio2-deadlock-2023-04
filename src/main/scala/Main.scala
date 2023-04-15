@@ -1,3 +1,9 @@
+
+/*
+ * Run sbt, call `runMain Main` and see non termination.
+ * If you call one of the working* method in place of one of the blocking*
+ * in TEST object last line, the program ends as expected.
+ */
 object Main {
   def main(args: Array[String]): Unit = {
     println("Hello world!")
@@ -13,6 +19,11 @@ object Main {
   }
 }
 
+/*
+ * Calling from an other object blocks on some cases. The one I discover are:
+ * - when we use foreachPar in place of foreach IF the size of the collection is > 1
+ * - when we use Console.printLine in place of ZIO.attempt(println())
+ */
 object TEST {
 
   def workingExampleForeachParSize1 = {
@@ -34,7 +45,7 @@ object TEST {
   def workingExampleForeach = {
     zio.Unsafe.unsafe(implicit unsafe => {
       zio.Runtime.default.unsafe
-        .run(zio.ZIO.foreachPar(List("a", "b", "c", "d").take(1))(x => zio.ZIO.attempt(println(x))).withParallelism(4))
+        .run(zio.ZIO.foreach(List("a", "b", "c", "d"))(x => zio.ZIO.attempt(println(x))).withParallelism(4))
         .getOrThrowFiberFailure()
     })
   }
